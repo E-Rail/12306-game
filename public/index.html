@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12306 Railway Tycoon</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0a0e1a; color: #e0e0e0; overflow: hidden; height: 100vh; }
+
+.app { display: grid; grid-template-columns: 1fr 360px; grid-template-rows: 56px 1fr; height: 100vh; }
+
+.header { grid-column: 1 / -1; background: linear-gradient(135deg, #0d1b2a, #1b2838); display: flex; align-items: center; padding: 0 20px; border-bottom: 1px solid #1e3a5f; z-index: 10; }
+.header h1 { font-size: 20px; font-weight: 700; background: linear-gradient(90deg, #4fc3f7, #81d4fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.header-stats { display: flex; gap: 20px; margin-left: 40px; }
+.hstat { display: flex; flex-direction: column; align-items: center; }
+.hstat-label { font-size: 9px; color: #607d8b; text-transform: uppercase; letter-spacing: 0.5px; }
+.hstat-value { font-size: 14px; font-weight: 700; }
+.hstat-value.money { color: #66bb6a; }
+.hstat-value.score { color: #ffa726; }
+.hstat-value.time { color: #ce93d8; }
+
+.controls { display: flex; gap: 6px; margin-left: auto; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.speed-btn { background: #1a2744; border: 1px solid #2a4070; color: #90caf9; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; transition: all 0.15s; }
+.speed-btn:hover { background: #243b6a; }
+.speed-btn.active { background: #1565c0; border-color: #42a5f5; color: #fff; }
+.reset-btn { background: #b71c1c; border: 1px solid #e53935; color: #ffcdd2; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; }
+.reset-btn:hover { background: #d32f2f; }
+
+.map-container { position: relative; background: #0d1117; overflow: hidden; }
+canvas { display: block; width: 100%; height: 100%; }
+
+.map-overlay { position: absolute; top: 12px; left: 12px; background: rgba(13,17,23,0.92); border: 1px solid #1e3a5f; border-radius: 8px; padding: 12px 16px; font-size: 12px; color: #90caf9; pointer-events: none; max-width: 280px; }
+.map-overlay .title { font-weight: 700; color: #e0e0e0; margin-bottom: 4px; font-size: 13px; }
+.map-overlay .desc { color: #78909c; line-height: 1.4; }
+
+.route-builder { position: absolute; top: 12px; right: 12px; background: rgba(13,17,23,0.92); border: 1px solid #1e3a5f; border-radius: 10px; padding: 14px 18px; min-width: 240px; }
+.route-builder .rb-title { font-size: 13px; font-weight: 700; color: #e0e0e0; margin-bottom: 8px; }
+.route-builder .rb-stops { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; min-height: 28px; max-height: 200px; overflow-y: auto; }
+.rb-stop { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #90caf9; }
+.rb-stop .num { background: #1565c0; color: #fff; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+.rb-stop .name { font-weight: 600; }
+.rb-stop .remove { background: none; border: none; color: #ef9a9a; cursor: pointer; font-size: 14px; padding: 0 2px; }
+.rb-stop .remove:hover { color: #f44336; }
+.rb-arrow { color: #37474f; font-size: 10px; text-align: center; }
+.rb-info { font-size: 11px; color: #78909c; margin-bottom: 8px; }
+.rb-info span { color: #ffa726; font-weight: 600; }
+.rb-btns { display: flex; gap: 6px; }
+.rb-btn { flex: 1; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; border: none; font-weight: 600; }
+.rb-btn.create { background: #1565c0; color: #fff; }
+.rb-btn.create:hover { background: #1976d2; }
+.rb-btn.create:disabled { background: #37474f; color: #546e7a; cursor: not-allowed; }
+.rb-btn.clear { background: #1a2744; color: #90caf9; border: 1px solid #2a4070; }
+.rb-btn.clear:hover { background: #243b6a; }
+
+.map-hint { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); background: rgba(13,17,23,0.92); border: 1px solid #1e3a5f; border-radius: 8px; padding: 10px 20px; font-size: 13px; color: #90caf9; white-space: nowrap; transition: all 0.3s; }
+.map-hint.error { border-color: #e53935; color: #ef9a9a; }
+.map-hint.success { border-color: #43a047; color: #a5d6a7; }
+
+.panel { background: #0d1117; border-left: 1px solid #1e3a5f; display: flex; flex-direction: column; overflow: hidden; }
+.panel-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #546e7a; padding: 10px 16px 6px; font-weight: 600; }
+
+.route-list { flex: 1; overflow-y: auto; }
+.route-item { padding: 10px 16px; border-bottom: 1px solid #152030; }
+.route-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.route-name { font-size: 13px; font-weight: 600; color: #e0e0e0; line-height: 1.3; }
+.route-rev { font-size: 11px; color: #546e7a; margin-bottom: 4px; }
+.route-occ { font-size: 11px; padding: 2px 8px; border-radius: 10px; flex-shrink: 0; }
+.route-occ.low { background: #1b5e20; color: #81c784; }
+.route-occ.mid { background: #e65100; color: #ffb74d; }
+.route-occ.high { background: #b71c1c; color: #ef9a9a; }
+.route-stats { display: flex; gap: 10px; font-size: 11px; color: #78909c; flex-wrap: wrap; }
+.route-stats span { display: flex; align-items: center; gap: 3px; }
+
+.train-control { margin-top: 8px; display: flex; align-items: center; gap: 8px; }
+.train-control label { font-size: 11px; color: #90a4ae; white-space: nowrap; }
+.train-slider { flex: 1; -webkit-appearance: none; height: 4px; border-radius: 2px; background: #1e3a5f; outline: none; }
+.train-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #42a5f5; cursor: pointer; }
+.train-count { font-size: 16px; font-weight: 700; color: #42a5f5; min-width: 24px; text-align: center; }
+.train-cost { font-size: 10px; color: #78909c; margin-top: 2px; }
+
+.route-delete { background: none; border: 1px solid #533; color: #ef9a9a; padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; margin-top: 6px; }
+.route-delete:hover { background: #b71c1c; color: #fff; border-color: #e53935; }
+
+.no-routes { padding: 20px 16px; text-align: center; color: #546e7a; font-size: 13px; }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #0a0e1a; }
+::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="header">
+    <h1>🚄 Railway Tycoon</h1>
+    <div class="header-stats">
+      <div class="hstat"><span class="hstat-label">Money</span><span class="hstat-value money" id="hMoney">¥10M</span></div>
+      <div class="hstat"><span class="hstat-label">Waitlist</span><span class="hstat-value score" id="hWaitlist">0</span></div>
+      <div class="hstat"><span class="hstat-label">Score</span><span class="hstat-value score" id="hScore">0</span></div>
+      <div class="hstat"><span class="hstat-label">Time</span><span class="hstat-value time" id="hTime">Day 1 06:00</span></div>
+    </div>
+    <div class="controls">
+      <button class="speed-btn" data-speed="0" onclick="setSpeed(0)">⏸</button>
+      <button class="speed-btn active" data-speed="1" onclick="setSpeed(1)">1x</button>
+      <button class="speed-btn" data-speed="2" onclick="setSpeed(2)">2x</button>
+      <button class="speed-btn" data-speed="5" onclick="setSpeed(5)">5x</button>
+      <button class="speed-btn" data-speed="10" onclick="setSpeed(10)">10x</button>
+      <button class="speed-btn" data-speed="20" onclick="setSpeed(20)">20x</button>
+      <button class="reset-btn" onclick="resetGame()">Reset</button>
+    </div>
+  </header>
+
+  <div class="map-container">
+    <canvas id="mapCanvas"></canvas>
+
+    <div class="map-overlay" id="mapOverlay">
+      <div class="title">How to Play</div>
+      <div class="desc">Click cities one by one to build a route. Each stop must connect to the previous one via real rail lines. Click "Create Route" when done.</div>
+    </div>
+
+    <div class="route-builder" id="routeBuilder" style="display:none;">
+      <div class="rb-title">🛤️ New Route</div>
+      <div class="rb-stops" id="rbStops"></div>
+      <div class="rb-info" id="rbInfo"></div>
+      <div class="rb-btns">
+        <button class="rb-btn clear" onclick="clearRouteBuilder()">Clear</button>
+        <button class="rb-btn create" id="rbCreateBtn" onclick="createRoute()" disabled>Create Route</button>
+      </div>
+    </div>
+
+    <div class="map-hint" id="mapHint">🖱 Click a city to start building a route</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">📍 Your Routes</div>
+    <div class="route-list" id="routeList">
+      <div class="no-routes">No routes yet. Click cities on the map to build a route.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+let cities = {};
+let possibleEdges = [];
+let playerRoutes = [];
+let gameState = {};
+let hoveredCity = null;
+let animFrame = 0;
+let routeWaypoints = [];
+
+const canvas = document.getElementById('mapCanvas');
+const ctx = canvas.getContext('2d');
+
+// Pre-compute edge set for fast lookup
+let edgeSet = null;
+function buildEdgeSet(s) {
+  edgeSet = new Set();
+  for (const e of s) edgeSet.add(e[0] < e[1] ? e[0]+'-'+e[1] : e[1]+'-'+e[0]);
+}
+function hasEdge(a, b) { return edgeSet.has(a < b ? a+'-'+b : b+'-'+a); }
+
+function resizeCanvas() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * devicePixelRatio;
+  canvas.height = rect.height * devicePixelRatio;
+  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+async function loadMap() {
+  try {
+    const res = await fetch('/api/map');
+    const data = await res.json();
+    cities = data.cities;
+    possibleEdges = data.possibleEdges;
+    buildEdgeSet(possibleEdges);
+  } catch (e) {}
+}
+
+async function loadState() {
+  try {
+    const res = await fetch('/api/state');
+    const data = await res.json();
+    gameState = data.game;
+    playerRoutes = data.routes;
+    updateHeader();
+    renderRouteList();
+  } catch (e) {}
+}
+
+function formatMoney(n) {
+  if (Math.abs(n) >= 1e6) return '¥' + (n / 1e6).toFixed(1) + 'M';
+  if (Math.abs(n) >= 1e3) return '¥' + (n / 1e3).toFixed(0) + 'K';
+  return '¥' + Math.round(n).toLocaleString();
+}
+
+function updateHeader() {
+  const mEl = document.getElementById('hMoney');
+  mEl.textContent = formatMoney(gameState.money);
+  mEl.style.color = gameState.money < 0 ? '#ef5350' : '#66bb6a';
+  document.getElementById('hScore').textContent = Math.round(gameState.score).toLocaleString();
+  const h = Math.floor(gameState.hour);
+  const m = Math.floor((gameState.hour % 1) * 60);
+  document.getElementById('hTime').textContent = 'Day ' + gameState.day + ' ' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+  document.getElementById('hWaitlist').textContent = gameState.totalWaitlisted || 0;
+}
+
+function renderRouteList() {
+  const el = document.getElementById('routeList');
+  if (!playerRoutes || playerRoutes.length === 0) {
+    el.innerHTML = '<div class="no-routes">No routes yet. Click cities on the map to build a route.</div>';
+    return;
+  }
+
+  const seen = new Set();
+  const pairs = [];
+  for (const r of playerRoutes) {
+    if (seen.has(r.id)) continue;
+    const rev = playerRoutes.find(x => x.id === r.pairId);
+    seen.add(r.id);
+    if (rev) seen.add(rev.id);
+    pairs.push({ fwd: r, rev });
+  }
+
+  let html = '';
+  for (let pi = 0; pi < pairs.length; pi++) {
+    const fwd = pairs[pi].fwd;
+    const rev = pairs[pi].rev;
+    const fwdName = fwd.waypoints.map(w => cities[w]?.en || w).join(' → ');
+    const revName = rev ? rev.waypoints.map(w => cities[w]?.en || w).join(' → ') : '';
+    const totalTrains = fwd.trainCount + (rev ? rev.trainCount : 0);
+    const totalBooked = fwd.totalBooked + (rev ? rev.totalBooked : 0);
+    const totalSeats = fwd.totalSeats + (rev ? rev.totalSeats : 0);
+    const totalWL = fwd.waitlist + (rev ? rev.waitlist : 0);
+    const avgOcc = totalSeats > 0 ? Math.round(totalBooked / totalSeats * 100) : 0;
+    const occLvl = avgOcc >= 80 ? 'high' : avgOcc >= 50 ? 'mid' : 'low';
+    const costPerTick = (fwd.costPerTick || 0) * totalTrains;
+
+    html += '<div class="route-item" data-id="' + fwd.id + '">' +
+      '<div class="route-header"><span class="route-name">' + fwdName + '</span>' +
+      '<span class="route-occ ' + occLvl + '">' + avgOcc + '%</span></div>' +
+      (revName ? '<div class="route-rev">↔ ' + revName + '</div>' : '') +
+      '<div class="route-stats">' +
+        '<span>🚃 ' + totalTrains + ' trains</span>' +
+        '<span>💺 ' + totalBooked + '/' + totalSeats + '</span>' +
+        '<span>⏳ ' + totalWL + ' wait</span>' +
+      '</div>' +
+      '<div class="train-control">' +
+        '<label>Trains/dir:</label>' +
+        '<input type="range" class="train-slider" min="0" max="50" value="' + fwd.trainCount + '" oninput="updateTrainUI(\'' + fwd.id + '\',this.value)" onchange="commitTrain(\'' + fwd.id + '\',this.value)">' +
+        '<span class="train-count">' + fwd.trainCount + '</span>' +
+      '</div>' +
+      '<div class="train-cost">Running: ' + formatMoney(costPerTick) + '/tick · New train/dir: FREE</div>' +
+      '<div class="train-cost">Trip: ~' + Math.round(fwd.distance / 350 * 60) + 'min · Seats reset each arrival</div>' +
+      '<button class="route-delete" onclick="deleteRoute(\'' + fwd.id + '\')">Remove Route</button>' +
+    '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function calcRouteDistance(waypoints) {
+  let total = 0;
+  for (let i = 0; i < waypoints.length - 1; i++) {
+    const key = waypoints[i] < waypoints[i+1] ? waypoints[i]+'-'+waypoints[i+1] : waypoints[i+1]+'-'+waypoints[i];
+    const edge = possibleEdges.find(e => (e[0] < e[1] ? e[0]+'-'+e[1] : e[1]+'-'+e[0]) === key);
+    if (!edge) return null;
+    total += edge[2];
+  }
+  return total;
+}
+
+function addWaypoint(cityId) {
+  if (routeWaypoints.includes(cityId)) return false;
+  if (routeWaypoints.length > 0 && !hasEdge(routeWaypoints[routeWaypoints.length - 1], cityId)) return false;
+  routeWaypoints.push(cityId);
+  updateRouteBuilderUI();
+  return true;
+}
+
+function removeWaypoint(index) {
+  routeWaypoints.splice(index, 1);
+  updateRouteBuilderUI();
+}
+
+function clearRouteBuilder() {
+  routeWaypoints = [];
+  updateRouteBuilderUI();
+}
+
+function updateRouteBuilderUI() {
+  const builder = document.getElementById('routeBuilder');
+  const stopsEl = document.getElementById('rbStops');
+  const infoEl = document.getElementById('rbInfo');
+  const createBtn = document.getElementById('rbCreateBtn');
+
+  if (routeWaypoints.length === 0) {
+    builder.style.display = 'none';
+    setHint('🖱 Click a city to start building a route');
+    return;
+  }
+  builder.style.display = 'block';
+
+  let html = '';
+  for (let i = 0; i < routeWaypoints.length; i++) {
+    const c = cities[routeWaypoints[i]];
+    html += '<div class="rb-stop"><span class="num">' + (i+1) + '</span><span class="name">' + c.en + ' (' + c.name + ')</span>';
+    if (routeWaypoints.length > 2) html += '<button class="remove" onclick="removeWaypoint(' + i + ')">×</button>';
+    html += '</div>';
+    if (i < routeWaypoints.length - 1) html += '<div class="rb-arrow">▼</div>';
+  }
+  stopsEl.innerHTML = html;
+
+  const dist = calcRouteDistance(routeWaypoints);
+  if (dist !== null) {
+    infoEl.innerHTML = 'Distance: <span>' + dist + 'km</span> · ' + routeWaypoints.length + ' stops';
+    createBtn.disabled = false;
+    setHint('Click another connected city to add more stops, or click "Create Route"');
+  } else {
+    infoEl.innerHTML = '<span style="color:#ef9a9a">Invalid connection</span>';
+    createBtn.disabled = true;
+  }
+}
+
+function setHint(msg, type) {
+  const el = document.getElementById('mapHint');
+  el.textContent = msg;
+  el.className = 'map-hint' + (type ? ' ' + type : '');
+  if (type) setTimeout(() => { el.className = 'map-hint'; }, 3000);
+}
+
+async function createRoute() {
+  if (routeWaypoints.length < 2) return;
+  try {
+    const res = await fetch('/api/route', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ waypoints: routeWaypoints }),
+    });
+    const data = await res.json();
+    if (data.error) setHint('❌ ' + data.error, 'error');
+    else setHint('✓ Route created! Add trains with the slider.', 'success');
+  } catch (e) { setHint('❌ Network error', 'error'); }
+  routeWaypoints = [];
+  updateRouteBuilderUI();
+  loadState();
+}
+
+function updateTrainUI(routeId, val) {
+  const item = document.querySelector('.route-item[data-id="' + routeId + '"]');
+  if (item) item.querySelector('.train-count').textContent = val;
+}
+
+async function commitTrain(routeId, val) {
+  try {
+    await fetch('/api/route/' + routeId + '/trains', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ count: parseInt(val) }),
+    });
+  } catch (e) {}
+  loadState();
+}
+
+async function deleteRoute(routeId) {
+  if (!confirm('Remove this route and its reverse?')) return;
+  await fetch('/api/route/' + routeId, { method: 'DELETE' });
+  loadState();
+}
+
+async function setSpeed(s) {
+  await fetch('/api/speed', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ speed: s }),
+  });
+  document.querySelectorAll('.speed-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.speed) === s);
+  });
+}
+
+async function resetGame() {
+  if (!confirm('Reset the entire game?')) return;
+  await fetch('/api/reset', { method: 'POST' });
+  routeWaypoints = [];
+  updateRouteBuilderUI();
+  loadState();
+}
+
+// ─── Map Rendering ─────────────────────────────────────────────
+
+// Cache grid to offscreen canvas
+let gridCache = null;
+let gridW = 0, gridH = 0;
+
+function drawGrid(w, h) {
+  if (gridCache && gridW === w && gridH === h) return;
+  gridW = w; gridH = h;
+  const off = document.createElement('canvas');
+  off.width = w; off.height = h;
+  const c = off.getContext('2d');
+  c.strokeStyle = '#0d1a2a';
+  c.lineWidth = 0.5;
+  for (let x = 0; x < w; x += 40) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); }
+  for (let y = 0; y < h; y += 40) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
+  gridCache = off;
+}
+
+function drawMap() {
+  const w = canvas.width / devicePixelRatio;
+  const h = canvas.height / devicePixelRatio;
+  ctx.clearRect(0, 0, w, h);
+  animFrame++;
+
+  // Grid
+  drawGrid(w, h);
+  if (gridCache) ctx.drawImage(gridCache, 0, 0);
+
+  // Background edges
+  ctx.strokeStyle = '#0f1f30';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  for (let i = 0; i < possibleEdges.length; i++) {
+    const e = possibleEdges[i];
+    const c1 = cities[e[0]], c2 = cities[e[1]];
+    if (!c1 || !c2) continue;
+    ctx.beginPath(); ctx.moveTo(c1.x, c1.y); ctx.lineTo(c2.x, c2.y); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  // Player routes
+  for (let ri = 0; ri < playerRoutes.length; ri++) {
+    const route = playerRoutes[ri];
+    const wps = route.waypoints;
+    if (wps.length < 2) continue;
+
+    const hasTrains = route.trainCount > 0;
+
+    // Glow
+    ctx.strokeStyle = hasTrains ? 'rgba(66,165,245,0.12)' : 'rgba(255,167,38,0.08)';
+    ctx.lineWidth = 14;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cities[wps[0]].x, cities[wps[0]].y);
+    for (let i = 1; i < wps.length; i++) ctx.lineTo(cities[wps[i]].x, cities[wps[i]].y);
+    ctx.stroke();
+
+    // Line
+    ctx.strokeStyle = hasTrains ? '#1976d2' : '#e65100';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(cities[wps[0]].x, cities[wps[0]].y);
+    for (let i = 1; i < wps.length; i++) ctx.lineTo(cities[wps[i]].x, cities[wps[i]].y);
+    ctx.stroke();
+
+    // Train dots (max 4 per route for perf)
+    if (hasTrains) {
+      const count = Math.min(route.trainCount, 4);
+      for (let i = 0; i < count; i++) {
+        const t = ((animFrame * 0.006 + i / count) % 1);
+        const pos = getPointOnPath(wps, t);
+        if (!pos) continue;
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = '#64b5f6';
+        ctx.fill();
+      }
+    }
+  }
+
+  // Route builder preview
+  if (routeWaypoints.length >= 2) {
+    let valid = true;
+    for (let i = 0; i < routeWaypoints.length - 1; i++) {
+      if (!hasEdge(routeWaypoints[i], routeWaypoints[i + 1])) { valid = false; break; }
+    }
+    ctx.strokeStyle = valid ? 'rgba(76,175,80,0.5)' : 'rgba(244,67,54,0.4)';
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([6, 4]);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cities[routeWaypoints[0]].x, cities[routeWaypoints[0]].y);
+    for (let i = 1; i < routeWaypoints.length; i++) ctx.lineTo(cities[routeWaypoints[i]].x, cities[routeWaypoints[i]].y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Hover preview
+  if (routeWaypoints.length > 0 && hoveredCity && !routeWaypoints.includes(hoveredCity)) {
+    const last = routeWaypoints[routeWaypoints.length - 1];
+    const c1 = cities[last], c2 = cities[hoveredCity];
+    const conn = hasEdge(last, hoveredCity);
+    ctx.strokeStyle = conn ? 'rgba(76,175,80,0.6)' : 'rgba(244,67,54,0.4)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 3]);
+    ctx.beginPath(); ctx.moveTo(c1.x, c1.y); ctx.lineTo(c2.x, c2.y); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Cities
+  for (const id in cities) {
+    const c = cities[id];
+    const isHovered = id === hoveredCity;
+    const hasRoute = playerRoutes.some(r => r.waypoints.includes(id));
+    const inBuilder = routeWaypoints.includes(id);
+    const r = isHovered ? 14 : (hasRoute || inBuilder ? 11 : 8);
+
+    // Outer glow
+    if (hasRoute || inBuilder) {
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, r + 10, 0, Math.PI * 2);
+      ctx.fillStyle = inBuilder ? 'rgba(255,213,79,0.2)' : 'rgba(66,165,245,0.12)';
+      ctx.fill();
+    }
+
+    // City dot
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, r, 0, Math.PI * 2);
+    if (inBuilder) ctx.fillStyle = '#f9a825';
+    else if (hasRoute) ctx.fillStyle = '#1565c0';
+    else ctx.fillStyle = '#37474f';
+    ctx.fill();
+
+    // City name
+    ctx.fillStyle = hasRoute || inBuilder ? '#e0e0e0' : '#607d8b';
+    ctx.font = (hasRoute || isHovered ? 'bold 13' : '11') + 'px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(c.en, c.x, c.y + r + 16);
+
+    ctx.fillStyle = hasRoute ? '#90caf9' : '#455a64';
+    ctx.font = '10px system-ui';
+    ctx.fillText(c.name, c.x, c.y + r + 28);
+  }
+
+  requestAnimationFrame(drawMap);
+}
+
+function getPointOnPath(waypoints, t) {
+  if (waypoints.length < 2) return null;
+  let totalLen = 0;
+  const segs = [];
+  for (let i = 0; i < waypoints.length - 1; i++) {
+    const c1 = cities[waypoints[i]], c2 = cities[waypoints[i+1]];
+    const len = Math.sqrt((c2.x - c1.x) ** 2 + (c2.y - c1.y) ** 2);
+    segs.push({ fx: c1.x, fy: c1.y, tx: c2.x, ty: c2.y, len: len, start: totalLen });
+    totalLen += len;
+  }
+  if (totalLen === 0) return null;
+  const target = t * totalLen;
+  for (let i = 0; i < segs.length; i++) {
+    const s = segs[i];
+    if (target >= s.start && target < s.start + s.len) {
+      const lt = (target - s.start) / s.len;
+      return { x: s.fx + (s.tx - s.fx) * lt, y: s.fy + (s.ty - s.fy) * lt };
+    }
+  }
+  const last = segs[segs.length - 1];
+  return { x: last.tx, y: last.ty };
+}
+
+// ─── Map Interaction ───────────────────────────────────────────
+
+function getCityAt(mx, my) {
+  for (const id in cities) {
+    const c = cities[id];
+    const dx = mx - c.x, dy = my - c.y;
+    if (dx * dx + dy * dy < 400) return id;
+  }
+  return null;
+}
+
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  hoveredCity = getCityAt(e.clientX - rect.left, e.clientY - rect.top);
+  canvas.style.cursor = hoveredCity ? 'pointer' : 'default';
+});
+
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const cityId = getCityAt(e.clientX - rect.left, e.clientY - rect.top);
+  if (!cityId) return;
+
+  if (routeWaypoints.length === 0) {
+    addWaypoint(cityId);
+    setHint('Starting from ' + cities[cityId].en + '. Click a connected city to continue.');
+  } else {
+    if (routeWaypoints.includes(cityId)) {
+      setHint(cities[cityId].en + ' is already in this route!', 'error');
+      return;
+    }
+    const last = routeWaypoints[routeWaypoints.length - 1];
+    if (!hasEdge(last, cityId)) {
+      setHint('No direct rail connection from ' + cities[last].en + ' to ' + cities[cityId].en + '!', 'error');
+      return;
+    }
+    addWaypoint(cityId);
+    setHint('Added ' + cities[cityId].en + '. Total: ' + calcRouteDistance(routeWaypoints) + 'km.');
+  }
+});
+
+// ─── Init ──────────────────────────────────────────────────────
+async function init() {
+  await loadMap();
+  await loadState();
+  drawMap();
+  setInterval(loadState, 250);
+}
+init();
+</script>
+</body>
+</html>
