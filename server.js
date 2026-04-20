@@ -37,32 +37,32 @@ const CITIES = {
   // Shanghai delta — spread horizontally and vertically
   HF: { name: '合肥', en: 'Hefei', x: 370, y: 465 },
   NJ: { name: '南京', en: 'Nanjing', x: 420, y: 490 },
-  WZ: { name: '无锡', en: 'Wuxi', x: 480, y: 495 },
-  SZX: { name: '苏州', en: 'Suzhou', x: 520, y: 520 },
+  WZ: { name: '无锡', en: 'Wuxi', x: 470, y: 490 },
+  SZX: { name: '苏州', en: 'Suzhou', x: 520, y: 515 },
   SH: { name: '上海', en: 'Shanghai', x: 560, y: 550 },
   HZ: { name: '杭州', en: 'Hangzhou', x: 460, y: 570 },
   NB: { name: '宁波', en: 'Ningbo', x: 530, y: 605 },
   // East coast — spread
   WY: { name: '温州', en: 'Wenzhou', x: 490, y: 640 },
-  FZ: { name: '福州', en: 'Fuzhou', x: 460, y: 680 },
+  FZ: { name: '福州', en: 'Fuzhou', x: 420, y: 680 },
   NC: { name: '南昌', en: 'Nanchang', x: 400, y: 590 },
-  XM: { name: '厦门', en: 'Xiamen', x: 490, y: 700 },
+  XM: { name: '厦门', en: 'Xiamen', x: 510, y: 710 },
   // Central
   ZZ: { name: '郑州', en: 'Zhengzhou', x: 330, y: 380 },
   XA: { name: '西安', en: "Xi'an", x: 210, y: 370 },
   WH: { name: '武汉', en: 'Wuhan', x: 350, y: 480 },
   CS: { name: '长沙', en: 'Changsha', x: 330, y: 545 },
   // Southwest — spread Chengdu-Chongqing
-  CD: { name: '成都', en: 'Chengdu', x: 120, y: 490 },
-  CQ: { name: '重庆', en: 'Chongqing', x: 190, y: 540 },
+  CD: { name: '成都', en: 'Chengdu', x: 130, y: 490 },
+  CQ: { name: '重庆', en: 'Chongqing', x: 200, y: 540 },
   GY: { name: '贵阳', en: 'Guiyang', x: 170, y: 600 },
-  KM: { name: '昆明', en: 'Kunming', x: 90, y: 630 },
+  KM: { name: '昆明', en: 'Kunming', x: 100, y: 640 },
   GL: { name: '桂林', en: 'Guilin', x: 260, y: 600 },
   // South — spread Pearl River Delta
   NN: { name: '南宁', en: 'Nanning', x: 190, y: 660 },
   GZ: { name: '广州', en: 'Guangzhou', x: 340, y: 650 },
-  SZ: { name: '深圳', en: 'Shenzhen', x: 380, y: 700 },
-  HK: { name: '香港', en: 'Hong Kong', x: 340, y: 720 },
+  SZ: { name: '深圳', en: 'Shenzhen', x: 390, y: 700 },
+  HK: { name: '香港', en: 'Hong Kong', x: 340, y: 730 },
   // Northwest
   LZ: { name: '兰州', en: 'Lanzhou', x: 130, y: 320 },
 };
