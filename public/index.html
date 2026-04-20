@@ -151,6 +151,36 @@ let hoveredCity = null;
 let animFrame = 0;
 let routeWaypoints = [];
 
+// Per-city label placement to avoid overlap in dense clusters
+// A=above, B=below, L=left, R=right (relative to city dot)
+const LABEL_DIR = {
+  // Northeast: vertical chain, all labels right
+  HRB: 'R', CC: 'R', SY: 'R', DL: 'B',
+  // Beijing cluster: spread around
+  BJ: 'A', TJ: 'R', TS: 'A',
+  // West north
+  HH: 'A', TY: 'L', SJZ: 'L',
+  // Shandong: avoid overlap
+  JN: 'B', QD: 'R', WF: 'A',
+  // East corridor
+  XZ: 'B', YC: 'R',
+  // Shanghai delta: alternate sides
+  HF: 'L', NJ: 'B', WZ: 'R', SZX: 'A', SH: 'R',
+  // East coast
+  HZ: 'B', NB: 'R',
+  // Fujian
+  FZ: 'B', XM: 'R', WY: 'A',
+  // Central
+  NC: 'L', ZZ: 'L', XA: 'A',
+  WH: 'B', CS: 'B',
+  // Southwest
+  CD: 'A', CQ: 'B', GY: 'B', KM: 'A', GL: 'B',
+  // South
+  NN: 'L', GZ: 'B', SZ: 'R', HK: 'R',
+  // Northwest
+  LZ: 'A',
+};
+
 const canvas = document.getElementById('mapCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -523,15 +553,24 @@ function drawMap() {
     else ctx.fillStyle = '#37474f';
     ctx.fill();
 
-    // City name
+    // City name — position based on label direction to avoid overlap
     ctx.fillStyle = hasRoute || inBuilder ? '#e0e0e0' : '#607d8b';
     ctx.font = (hasRoute || isHovered ? 'bold 13' : '11') + 'px system-ui';
-    ctx.textAlign = 'center';
-    ctx.fillText(c.en, c.x, c.y + r + 16);
+    const dir = LABEL_DIR[id] || 'B';
+    let lx, ly, lAlign;
+    if (dir === 'A') { lx = c.x; ly = c.y - r - 8; lAlign = 'center'; }
+    else if (dir === 'L') { lx = c.x - r - 8; ly = c.y + 4; lAlign = 'right'; }
+    else if (dir === 'R') { lx = c.x + r + 8; ly = c.y + 4; lAlign = 'left'; }
+    else { lx = c.x; ly = c.y + r + 16; lAlign = 'center'; }
+    ctx.textAlign = lAlign;
+    ctx.fillText(c.en, lx, ly);
 
     ctx.fillStyle = hasRoute ? '#90caf9' : '#455a64';
     ctx.font = '10px system-ui';
-    ctx.fillText(c.name, c.x, c.y + r + 28);
+    if (dir === 'A') ctx.fillText(c.name, lx, ly - 13);
+    else if (dir === 'L' || dir === 'R') ctx.fillText(c.name, lx, ly + 12);
+    else ctx.fillText(c.name, lx, ly + 12);
+    ctx.textAlign = 'center';
   }
 
   requestAnimationFrame(drawMap);

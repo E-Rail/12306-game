@@ -126,6 +126,12 @@ const RAW_EDGES = [
   ['SJZ', 'XZ', 500],
   // 桂林-南宁 Guilin-Nanning
   ['GL', 'NN', 365],
+  // 郑济高铁 Zhengzhou-Jinan HSR
+  ['ZZ', 'JN', 380],
+  // 深厦高铁 Shenzhen-Xiamen HSR (via 潮汕)
+  ['SZ', 'XM', 500],
+  // 深昌高铁 Shenzhen-Nanchang HSR (via 赣州)
+  ['SZ', 'NC', 800],
 ];
 
 // Deduplicate and build fast lookups
@@ -156,7 +162,7 @@ const CLS = ['business', 'first', 'second'];
 const CLS_CAPS = { business: 8, first: 28, second: 80 };
 const CLS_PRICES_PER_KM = { business: 1.46, first: 0.73, second: 0.46 };
 const CLS_TOTAL = 116; // 8+28+80
-const TRAIN_COST_PER_KM_PER_TICK = 0.1;
+const TRAIN_COST_PER_KM_PER_TICK = 1.0;
 const MAX_TRAINS_PER_ROUTE = 50;
 const MAX_WAITLIST_PER_ROUTE = 200;
 
