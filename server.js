@@ -13,57 +13,58 @@ app.use(express.static(path.join(__dirname, 'public')));
 // MAP DATA
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Geographic projection: lon 100-132°E, lat 19-49°N → 800×700 canvas
-// x = (lon-100)/32*800, y = (49-lat)/30*700
-// Small manual offsets applied in dense clusters to prevent label overlap
+// Positions loosely based on geography but prioritized for clickability.
+// Dense clusters (Shanghai delta, Shandong, Beijing, South) have been spread out.
 const CITIES = {
-  // Northeast
-  CC: { name: '长春', en: 'Changchun', x: 628, y: 52 },
-  SY: { name: '沈阳', en: 'Shenyang', x: 581, y: 115 },
-  DL: { name: '大连', en: 'Dalian', x: 547, y: 199 },   // +4,+8 (peninsula offset)
-  HRB: { name: '哈尔滨', en: 'Harbin', x: 653, y: 20 },   // NEW
-  // North
-  BJ: { name: '北京', en: 'Beijing', x: 410, y: 172 },
-  SJZ: { name: '石家庄', en: 'Shijiazhuang', x: 358, y: 242 },
-  TJ: { name: '天津', en: 'Tianjin', x: 429, y: 196 },
-  TS: { name: '唐山', en: 'Tangshan', x: 454, y: 181 },  // +4,-8
-  HH: { name: '呼和浩特', en: 'Hohhot', x: 290, y: 213 },
-  TY: { name: '太原', en: 'Taiyuan', x: 281, y: 249 },
-  // East
-  JN: { name: '济南', en: 'Jinan', x: 441, y: 310 },
-  QD: { name: '青岛', en: 'Qingdao', x: 495, y: 326 },
-  WF: { name: '潍坊', en: 'Weifang', x: 483, y: 301 },   // +4,-8
-  XZ: { name: '徐州', en: 'Xuzhou', x: 425, y: 406 },
-  HF: { name: '合肥', en: 'Hefei', x: 395, y: 470 },     // +8,+3
-  NJ: { name: '南京', en: 'Nanjing', x: 435, y: 491 },    // +8,+8
-  WZ: { name: '无锡', en: 'Wuxi', x: 453, y: 506 },       // +8,+10
-  SZX: { name: '苏州', en: 'Suzhou', x: 466, y: 519 },    // +8,+8
-  SH: { name: '上海', en: 'Shanghai', x: 485, y: 533 },    // +10,+8
-  HZ: { name: '杭州', en: 'Hangzhou', x: 461, y: 557 },
-  NB: { name: '宁波', en: 'Ningbo', x: 488, y: 571 },     // +5,+8
-  FZ: { name: '福州', en: 'Fuzhou', x: 473, y: 606 },
-  NC: { name: '南昌', en: 'Nanchang', x: 425, y: 580 },
-  XM: { name: '厦门', en: 'Xiamen', x: 455, y: 630 },
-  WY: { name: '温州', en: 'Wenzhou', x: 473, y: 596 },
-  YC: { name: '盐城', en: 'Yancheng', x: 458, y: 448 },   // -5,+8
+  // Northeast — spread vertically
+  HRB: { name: '哈尔滨', en: 'Harbin', x: 653, y: 10 },
+  CC: { name: '长春', en: 'Changchun', x: 630, y: 65 },
+  SY: { name: '沈阳', en: 'Shenyang', x: 590, y: 125 },
+  DL: { name: '大连', en: 'Dalian', x: 660, y: 175 },
+  // North — spread Beijing cluster
+  BJ: { name: '北京', en: 'Beijing', x: 400, y: 160 },
+  TJ: { name: '天津', en: 'Tianjin', x: 445, y: 200 },
+  TS: { name: '唐山', en: 'Tangshan', x: 500, y: 145 },
+  SJZ: { name: '石家庄', en: 'Shijiazhuang', x: 340, y: 240 },
+  HH: { name: '呼和浩特', en: 'Hohhot', x: 270, y: 190 },
+  TY: { name: '太原', en: 'Taiyuan', x: 280, y: 250 },
+  // East — spread Shandong
+  JN: { name: '济南', en: 'Jinan', x: 430, y: 305 },
+  WF: { name: '潍坊', en: 'Weifang', x: 500, y: 275 },
+  QD: { name: '青岛', en: 'Qingdao', x: 540, y: 320 },
+  XZ: { name: '徐州', en: 'Xuzhou', x: 410, y: 400 },
+  YC: { name: '盐城', en: 'Yancheng', x: 490, y: 440 },
+  // Shanghai delta — spread horizontally and vertically
+  HF: { name: '合肥', en: 'Hefei', x: 370, y: 465 },
+  NJ: { name: '南京', en: 'Nanjing', x: 420, y: 490 },
+  WZ: { name: '无锡', en: 'Wuxi', x: 480, y: 495 },
+  SZX: { name: '苏州', en: 'Suzhou', x: 520, y: 520 },
+  SH: { name: '上海', en: 'Shanghai', x: 560, y: 550 },
+  HZ: { name: '杭州', en: 'Hangzhou', x: 460, y: 570 },
+  NB: { name: '宁波', en: 'Ningbo', x: 530, y: 605 },
+  // East coast — spread
+  WY: { name: '温州', en: 'Wenzhou', x: 490, y: 640 },
+  FZ: { name: '福州', en: 'Fuzhou', x: 460, y: 680 },
+  NC: { name: '南昌', en: 'Nanchang', x: 400, y: 590 },
+  XM: { name: '厦门', en: 'Xiamen', x: 490, y: 700 },
   // Central
-  ZZ: { name: '郑州', en: 'Zhengzhou', x: 340, y: 379 },
-  XA: { name: '西安', en: "Xi'an", x: 228, y: 386 },
-  WH: { name: '武汉', en: 'Wuhan', x: 360, y: 485 },
-  CS: { name: '长沙', en: 'Changsha', x: 343, y: 545 },
-  // Southwest
-  CD: { name: '成都', en: 'Chengdu', x: 143, y: 507 },    // -5,-5
-  CQ: { name: '重庆', en: 'Chongqing', x: 191, y: 541 },  // +5,+5
-  GY: { name: '贵阳', en: 'Guiyang', x: 178, y: 580 },
-  KM: { name: '昆明', en: 'Kunming', x: 108, y: 587 },
-  GL: { name: '桂林', en: 'Guilin', x: 247, y: 591 },     // NEW
-  // South
-  NN: { name: '南宁', en: 'Nanning', x: 200, y: 613 },
-  GZ: { name: '广州', en: 'Guangzhou', x: 338, y: 628 },
-  SZ: { name: '深圳', en: 'Shenzhen', x: 361, y: 645 },   // +3,+5
-  HK: { name: '香港', en: 'Hong Kong', x: 347, y: 655 },  // NEW
+  ZZ: { name: '郑州', en: 'Zhengzhou', x: 330, y: 380 },
+  XA: { name: '西安', en: "Xi'an", x: 210, y: 370 },
+  WH: { name: '武汉', en: 'Wuhan', x: 350, y: 480 },
+  CS: { name: '长沙', en: 'Changsha', x: 330, y: 545 },
+  // Southwest — spread Chengdu-Chongqing
+  CD: { name: '成都', en: 'Chengdu', x: 120, y: 490 },
+  CQ: { name: '重庆', en: 'Chongqing', x: 190, y: 540 },
+  GY: { name: '贵阳', en: 'Guiyang', x: 170, y: 600 },
+  KM: { name: '昆明', en: 'Kunming', x: 90, y: 630 },
+  GL: { name: '桂林', en: 'Guilin', x: 260, y: 600 },
+  // South — spread Pearl River Delta
+  NN: { name: '南宁', en: 'Nanning', x: 190, y: 660 },
+  GZ: { name: '广州', en: 'Guangzhou', x: 340, y: 650 },
+  SZ: { name: '深圳', en: 'Shenzhen', x: 380, y: 700 },
+  HK: { name: '香港', en: 'Hong Kong', x: 340, y: 720 },
   // Northwest
-  LZ: { name: '兰州', en: 'Lanzhou', x: 138, y: 329 },
+  LZ: { name: '兰州', en: 'Lanzhou', x: 130, y: 320 },
 };
 
 const RAW_EDGES = [

@@ -154,30 +154,17 @@ let routeWaypoints = [];
 // Per-city label placement to avoid overlap in dense clusters
 // A=above, B=below, L=left, R=right (relative to city dot)
 const LABEL_DIR = {
-  // Northeast: vertical chain, all labels right
-  HRB: 'R', CC: 'R', SY: 'R', DL: 'B',
-  // Beijing cluster: spread around
+  HRB: 'B', CC: 'B', SY: 'R', DL: 'B',
   BJ: 'A', TJ: 'R', TS: 'A',
-  // West north
   HH: 'A', TY: 'L', SJZ: 'L',
-  // Shandong: avoid overlap
-  JN: 'B', QD: 'R', WF: 'A',
-  // East corridor
+  JN: 'B', WF: 'A', QD: 'R',
   XZ: 'B', YC: 'R',
-  // Shanghai delta: alternate sides
   HF: 'L', NJ: 'B', WZ: 'R', SZX: 'A', SH: 'R',
-  // East coast
   HZ: 'B', NB: 'R',
-  // Fujian
-  FZ: 'B', XM: 'R', WY: 'A',
-  // Central
-  NC: 'L', ZZ: 'L', XA: 'A',
-  WH: 'B', CS: 'B',
-  // Southwest
+  WY: 'A', FZ: 'B', NC: 'L', XM: 'R',
+  ZZ: 'L', XA: 'A', WH: 'B', CS: 'B',
   CD: 'A', CQ: 'B', GY: 'B', KM: 'A', GL: 'B',
-  // South
   NN: 'L', GZ: 'B', SZ: 'R', HK: 'R',
-  // Northwest
   LZ: 'A',
 };
 
@@ -605,7 +592,7 @@ function getCityAt(mx, my) {
   for (const id in cities) {
     const c = cities[id];
     const dx = mx - c.x, dy = my - c.y;
-    if (dx * dx + dy * dy < 400) return id;
+    if (dx * dx + dy * dy < 900) return id;
   }
   return null;
 }
