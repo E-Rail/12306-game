@@ -8,7 +8,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0a0e1a; color: #e0e0e0; overflow: hidden; height: 100vh; }
 
-.app { display: grid; grid-template-columns: 1fr 360px; grid-template-rows: 56px 1fr; height: 100vh; }
+.app { display: grid; grid-template-columns: 1fr var(--panel-w, 360px); grid-template-rows: 56px 1fr; height: 100vh; }
 
 .header { grid-column: 1 / -1; background: linear-gradient(135deg, #0d1b2a, #1b2838); display: flex; align-items: center; padding: 0 20px; border-bottom: 1px solid #1e3a5f; z-index: 10; }
 .header h1 { font-size: 20px; font-weight: 700; background: linear-gradient(90deg, #4fc3f7, #81d4fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -53,11 +53,13 @@ canvas { display: block; width: 100%; height: 100%; }
 .rb-btn.clear { background: #1a2744; color: #90caf9; border: 1px solid #2a4070; }
 .rb-btn.clear:hover { background: #243b6a; }
 
-.map-hint { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); background: rgba(13,17,23,0.92); border: 1px solid #1e3a5f; border-radius: 8px; padding: 10px 20px; font-size: 13px; color: #90caf9; white-space: nowrap; transition: all 0.3s; }
-.map-hint.error { border-color: #e53935; color: #ef9a9a; }
-.map-hint.success { border-color: #43a047; color: #a5d6a7; }
+.panel-hint { margin-top: auto; padding: 10px 16px; font-size: 12px; color: #90caf9; border-top: 1px solid #1e3a5f; background: #0d1117; text-align: center; transition: all 0.3s; }
+.panel-hint.error { border-top-color: #e53935; color: #ef9a9a; }
+.panel-hint.success { border-top-color: #43a047; color: #a5d6a7; }
 
-.panel { background: #0d1117; border-left: 1px solid #1e3a5f; display: flex; flex-direction: column; overflow: hidden; }
+.panel { background: #0d1117; border-left: 1px solid #1e3a5f; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+.panel-resize { position: absolute; left: -4px; top: 0; bottom: 0; width: 8px; cursor: col-resize; z-index: 20; }
+.panel-resize:hover, .panel-resize.dragging { background: rgba(66,165,245,0.3); }
 .panel-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #546e7a; padding: 10px 16px 6px; font-weight: 600; }
 
 .route-list { flex: 1; overflow-y: auto; }
@@ -128,15 +130,15 @@ canvas { display: block; width: 100%; height: 100%; }
         <button class="rb-btn create" id="rbCreateBtn" onclick="createRoute()" disabled>Create Route</button>
       </div>
     </div>
-
-    <div class="map-hint" id="mapHint">🖱 Click a city to start building a route</div>
   </div>
 
-  <div class="panel">
+  <div class="panel" id="panel">
+    <div class="panel-resize" id="panelResize"></div>
     <div class="panel-title">📍 Your Routes</div>
     <div class="route-list" id="routeList">
       <div class="no-routes">No routes yet. Click cities on the map to build a route.</div>
     </div>
+    <div class="panel-hint" id="mapHint">🖱 Click a city to start building a route</div>
   </div>
 </div>
 
@@ -345,8 +347,8 @@ function updateRouteBuilderUI() {
 function setHint(msg, type) {
   const el = document.getElementById('mapHint');
   el.textContent = msg;
-  el.className = 'map-hint' + (type ? ' ' + type : '');
-  if (type) setTimeout(() => { el.className = 'map-hint'; }, 3000);
+  el.className = 'panel-hint' + (type ? ' ' + type : '');
+  if (type) setTimeout(() => { el.className = 'panel-hint'; }, 3000);
 }
 
 async function createRoute() {
@@ -625,6 +627,37 @@ canvas.addEventListener('click', (e) => {
     setHint('Added ' + cities[cityId].en + '. Total: ' + calcRouteDistance(routeWaypoints) + 'km.');
   }
 });
+
+// ─── Panel Resize ───────────────────────────────────────────────
+(function() {
+  const handle = document.getElementById('panelResize');
+  const app = document.querySelector('.app');
+  let dragging = false, startX, startW;
+
+  handle.addEventListener('mousedown', (e) => {
+    dragging = true;
+    startX = e.clientX;
+    startW = parseInt(getComputedStyle(app).getPropertyValue('--panel-w')) || 360;
+    handle.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const w = Math.max(200, Math.min(600, startW - (e.clientX - startX)));
+    app.style.setProperty('--panel-w', w + 'px');
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    handle.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+})();
 
 // ─── Init ──────────────────────────────────────────────────────
 async function init() {
