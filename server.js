@@ -44,13 +44,13 @@ const CITIES = {
   NB: { name: '宁波', en: 'Ningbo', x: 530, y: 605 },
   // East coast — spread
   WY: { name: '温州', en: 'Wenzhou', x: 490, y: 640 },
-  FZ: { name: '福州', en: 'Fuzhou', x: 420, y: 680 },
-  NC: { name: '南昌', en: 'Nanchang', x: 400, y: 590 },
-  XM: { name: '厦门', en: 'Xiamen', x: 510, y: 710 },
+  FZ: { name: '福州', en: 'Fuzhou', x: 450, y: 680 },
+  NC: { name: '南昌', en: 'Nanchang', x: 430, y: 640 },    // moved SE, farther from WH
+  XM: { name: '厦门', en: 'Xiamen', x: 360, y: 710 },      // SW of Fuzhou
   // Central
   ZZ: { name: '郑州', en: 'Zhengzhou', x: 330, y: 380 },
   XA: { name: '西安', en: "Xi'an", x: 210, y: 370 },
-  WH: { name: '武汉', en: 'Wuhan', x: 350, y: 480 },
+  WH: { name: '武汉', en: 'Wuhan', x: 320, y: 490 },
   CS: { name: '长沙', en: 'Changsha', x: 330, y: 545 },
   // Southwest — spread Chengdu-Chongqing
   CD: { name: '成都', en: 'Chengdu', x: 130, y: 490 },
@@ -61,8 +61,8 @@ const CITIES = {
   // South — spread Pearl River Delta
   NN: { name: '南宁', en: 'Nanning', x: 190, y: 660 },
   GZ: { name: '广州', en: 'Guangzhou', x: 340, y: 650 },
-  SZ: { name: '深圳', en: 'Shenzhen', x: 390, y: 700 },
-  HK: { name: '香港', en: 'Hong Kong', x: 340, y: 730 },
+  SZ: { name: '深圳', en: 'Shenzhen', x: 490, y: 700 },
+  HK: { name: '香港', en: 'Hong Kong', x: 300, y: 730 },
   // Northwest
   LZ: { name: '兰州', en: 'Lanzhou', x: 130, y: 320 },
 };
